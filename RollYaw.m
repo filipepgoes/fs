@@ -10,7 +10,8 @@ function RollYaw
     Ixx Iyy Izz Ixz...
     m g S c...
     He Ve betae psipte roe...
-    ctr ti duracao
+    ctr ti duracao...
+    U % In Octave
  
   clc;
    
@@ -59,14 +60,14 @@ function RollYaw
    
   % calculando o equilibrio
   %x = [alpha theta fi F dp dd da]
-  x0 = [0 0 0 fmax(He,Ve) 0 0 0];
+  x0 = [0 0 0 Fmax2(He,Ve) 0 0 0];
   xe = fminsearch(@equil,x0,optimset('MaxIter',50000,'MaxFunEvals',50000,'TolFun',1e-10,'TolX',1e-10));
    
   disp ' '
   disp('             NO EQUILIBRIO:');
   disp ' '
   disp('Tracao (N)'); Fe = xe(4); disp(Fe);
-  disp('Posicao da manete (%)'); pife = Fe/fmax(He,Ve); disp(pife*100);
+  disp('Posicao da manete (%)'); pife = Fe/Fmax2(He,Ve); disp(pife*100);
   disp('Angulo de ataque (graus)'); disp(xe(1)*180/pi); alphae = xe(1);
   disp('Angulo theta (graus)'); disp(xe(2)*180/pi); thetae = xe(2);
   disp('Angulo fi (graus)'); disp(xe(3)*180/pi); fie = xe(3);
@@ -87,13 +88,33 @@ function RollYaw
   Ue = [pife ; dpe ; dae ; dde];
   eps1 = 1e-6;
   for i=1:9
-      X = Xe; X(i) = Xe(i)+eps1; f1 = dinam(0,X,Ue); f1(12)=[]; f1(11)=[]; f1(10)=[];
-      X = Xe; X(i) = Xe(i)-eps1; f2 = dinam(0,X,Ue); f2(12)=[]; f2(11)=[]; f2(10)=[];
+      X = Xe; X(i) = Xe(i)+eps1; 
+      % In Matlab:
+      % f1 = dinam(0,X,Ue); 
+      % In Octave:
+      U=Ue; f1 = dinam(0,X); 
+      f1(12)=[]; f1(11)=[]; f1(10)=[];
+      X = Xe; X(i) = Xe(i)-eps1; 
+      % In Matlab:
+      % f2 = dinam(0,X,Ue); 
+      % In Octave:
+      U=Ue; f2 = dinam(0,X);
+      f2(12)=[]; f2(11)=[]; f2(10)=[];
       A(:,i) = (f1 - f2) / (2*eps1);
   end
   for i=1:4
-      U = Ue; U(i) = U(i)+eps1; f1 = dinam(0,Xe,U); f1(12)=[]; f1(11)=[]; f1(10)=[];
-      U = Ue; U(i) = U(i)-eps1; f2 = dinam(0,Xe,U); f2(12)=[]; f2(11)=[]; f2(10)=[];
+      U = Ue; U(i) = U(i)+eps1; 
+      % In Matlab:
+      % f1 = dinam(0,Xe,U); 
+      % In Octave:
+      f1 = dinam(0,Xe);
+      f1(12)=[]; f1(11)=[]; f1(10)=[];
+      U = Ue; U(i) = U(i)-eps1; 
+      % In Matlab:
+      % f2 = dinam(0,Xe,U); 
+      % In Octave:
+      f2 = dinam(0,Xe);
+      f2(12)=[]; f2(11)=[]; f2(10)=[];
       B(:,i) = (f1 - f2) / (2*eps1);
   end
    
@@ -121,8 +142,11 @@ function RollYaw
           He+dH betae+dbeta fie+dfi pe+dp...
           re+dr 0 0 0];
   U0 = [pife ; dpe ; dae ; dde];
-  [t,X] = ode45(@dinam,[0 T],X0,[],U0);
-   
+  % In Matlab:
+  % [t,X] = ode45(@dinam,[0 T],X0,[],U0);
+  % In Octave:
+  U = U0; [t,X] = ode45(@dinam,[0 T],X0);
+  
   U = [0 0 0 0];
   for i = 1:length(t),
       uc = comandos(t(i));
@@ -172,7 +196,11 @@ function uc = comandos(t);
   elseif ctr(1) == 0, uc = [0 0 0 0]; end
 endfunction
 % ____________________________________________________________________
-function dXdt = dinam(t,X,U);
+% In Matlab:
+% function dXdt = dinam(t,X,U);
+% In Octave:
+function dXdt = dinam(t,X);
+  
   global CL0 CLa CLdp CLq CLap...
       CD0 k...
       Cm0 Cma Cmdp Cmq Cma Cmap...
@@ -183,8 +211,9 @@ function dXdt = dinam(t,X,U);
       Ixx Iyy Izz Ixz...
       m g S c...
       He Ve betae psipte roe...
-      ctr ti duracao
-   
+      ctr ti duracao...
+      U % In Octave 
+  
   dXdt = zeros(9,1);
   Vref = 240;
    
@@ -229,7 +258,7 @@ function dXdt = dinam(t,X,U);
   M = 1/2 * ro * V^2 * S * c * Cm;
   N = 1/2 * ro * V^2 * S * c * Cn;
    
-  F = pif * fmax(H,V);
+  F = pif * Fmax2(H,V);
   Mf = F * cos(alphaf) * zf;
        
   up = (- m*(w*q-v*r) - m*g*sin(theta)          + X + F*cos(alphaf))/m;
@@ -320,44 +349,4 @@ function f = equil(xe)
    
   f = f1^2 + f2^2 + f3^2 + f4^2 + f5^2 + f6^2 + f7^2;
 endfunction 
-% ____________________________________________________________________
-function [ro,a] = atmosfera(H)
- 
-  if H <= 11000
-      ro = 1.225*(1-2.2558e-5*H).^4.256060537;
-      T = 288.15-6.5e-3*H;
-      a = 20.0465*sqrt(T);
-  else
-      ro = 0.3638879*exp(-1.576939464e-4*(H-11000));
-      a = 295.065141;
-  end
-endfunction 
-% ____________________________________________________________________
-function y = fmax(H,V)  
-  global nv nro
-   
-  if(H <= 11000)
-      nro2 = nro;
-  else
-      nro2 = 1;
-  end
-   
-  % ao nivel do mar
-  roi = atmosfera(0);
-  Vi = 120;
-  fmaxi = 240000;
-   
-  % na tropopausa
-  ros = atmosfera(11000);
-  Vs = 120;
-  fmaxs = fmaxi * (Vs/Vi).^nv * (ros/roi).^nro2;
-   
-  ro = atmosfera(H);
-  [jV,jH] = size(H);
-   
-  if(H <= 11000)
-      y = fmaxi * (V/Vi).^nv * (ro/roi).^nro2;
-  else
-      y = fmaxs * (V/Vs).^nv * (ro/ros);
-  end
-endfunction 
+
