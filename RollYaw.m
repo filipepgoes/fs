@@ -21,7 +21,7 @@ function RollYaw
   Cyb = -1.5; Cyda = .05; Cydd = .3;
   Clb = -1.3; Clp = -13; Clr = 2.9; Clda = -.33; Cldd = .25;
   Cnb =  1.75; Cnp = -1.5; Cnr = -7.5; Cnda = -.125; Cndd = -1;
-  Fmax = 240000; nv = 0; nro =.75; alphaf = 1*pi/180; zf = 1.5;
+  nv = 0; nro =.75; alphaf = 1*pi/180; zf = 1.5;
   Ixx = 5.55e+6; Iyy = 9.72e+6; Izz = 14.51e+6; Ixz = -3.3e+4;
   m = 120000; g = 9.80665;    
   S = 260; c = 6.61;
@@ -60,14 +60,14 @@ function RollYaw
    
   % calculando o equilibrio
   %x = [alpha theta fi F dp dd da]
-  x0 = [0 0 0 Fmax2(He,Ve) 0 0 0];
+  x0 = [0 0 0 Fmax(He,Ve) 0 0 0];
   xe = fminsearch(@equil,x0,optimset('MaxIter',50000,'MaxFunEvals',50000,'TolFun',1e-10,'TolX',1e-10));
    
   disp ' '
   disp('             NO EQUILIBRIO:');
   disp ' '
   disp('Tracao (N)'); Fe = xe(4); disp(Fe);
-  disp('Posicao da manete (%)'); pife = Fe/Fmax2(He,Ve); disp(pife*100);
+  disp('Posicao da manete (%)'); pife = Fe/Fmax(He,Ve); disp(pife*100);
   disp('Angulo de ataque (graus)'); disp(xe(1)*180/pi); alphae = xe(1);
   disp('Angulo theta (graus)'); disp(xe(2)*180/pi); thetae = xe(2);
   disp('Angulo fi (graus)'); disp(xe(3)*180/pi); fie = xe(3);
@@ -258,7 +258,7 @@ function dXdt = dinam(t,X);
   M = 1/2 * ro * V^2 * S * c * Cm;
   N = 1/2 * ro * V^2 * S * c * Cn;
    
-  F = pif * Fmax2(H,V);
+  F = pif * Fmax(H,V);
   Mf = F * cos(alphaf) * zf;
        
   up = (- m*(w*q-v*r) - m*g*sin(theta)          + X + F*cos(alphaf))/m;
